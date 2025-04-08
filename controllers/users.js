@@ -1,14 +1,15 @@
 const User = require("../models/user");
-
-//GET /users
+const { BAD_REQUEST, NOT_FOUND, DEFAULT } = require("../utils/errors");
 
 const getUsers = (req, res) => {
   User.find({})
-    .then((users) => res.status(200).res.send(users))
+    .then((users) => res.status(200).send(users))
     .catch((err) => {
       console.error(err);
+      return res
+        .status(DEFAULT)
+        .send({ message: "An error has occurred on the server." }); //
     });
-  return res.status(500).send({ message: err.message });
 };
 
 const createUser = (req, res) => {
@@ -19,9 +20,11 @@ const createUser = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "ValidationError") {
-        return res.status(400).send({ message: err.message });
+        return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
       }
-      return res.status(500).send({ message: err.message });
+      return res
+        .status(DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
@@ -33,12 +36,14 @@ const getUser = (req, res) => {
     .catch((err) => {
       console.error(err);
       if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({ message: err.message });
-      } else if (err.name === "CastError") {
-        // CastError is equivalent to 400 bad request error
-        return res.status(400).send({ message: err.message });
+        return res.status(NOT_FOUND).send({ message: "Item not found." });
       }
-      return res.status(500).send({ message: err.message });
+      if (err.name === "CastError") {
+        return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
+      }
+      return res
+        .status(DEFAULT)
+        .send({ message: "An error has occurred on the server." });
     });
 };
 
