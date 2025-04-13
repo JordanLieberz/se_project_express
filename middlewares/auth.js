@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
+const { UNAUTHORIZED } = require("../utils/errors");
 
 const auth = (req, res, next) => {
   const exemptedRoutes = [
@@ -21,12 +22,14 @@ const auth = (req, res, next) => {
     req.headers.authorization.replace("Bearer ", "");
 
   if (!token) {
-    return res.status(401).send({ message: "Authorization required" });
+    return res.status(UNAUTHORIZED).send({ message: "Authorization required" });
   }
 
   return jwt.verify(token, JWT_SECRET, (err, payload) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized: Invalid token" });
+      return res
+        .status(UNAUTHORIZED)
+        .send({ message: "Unauthorized: Invalid token" });
     }
 
     req.user = payload;

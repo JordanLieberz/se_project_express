@@ -10,25 +10,17 @@ const {
   UNAUTHORIZED,
 } = require("../utils/errors");
 
-const getUsers = (req, res) => {
-  User.find({})
-    .then((users) => res.status(200).send(users))
-    .catch((err) => {
-      console.error(err);
-      res
-        .status(DEFAULT)
-        .send({ message: "An error has occurred on the server." });
-    });
-};
-
 const createUser = (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, name, avatar } = req.body;
 
   bcrypt
     .hash(password, 10)
-    .then((hashedPassword) => User.create({ email, password: hashedPassword }))
+    .then((hashedPassword) =>
+      User.create({ email, password: hashedPassword, name, avatar })
+    )
     .then((user) => {
-      res.status(CREATED).send(user);
+      const { password: _, ...userWithoutPassword } = user.toObject();
+      res.status(CREATED).send(userWithoutPassword);
     })
     .catch((err) => {
       console.error(err);
@@ -48,7 +40,7 @@ const createUser = (req, res) => {
 };
 
 const getCurrentUser = (req, res) => {
-  const { userId } = req.params;
+  const userId = req.user._id;
 
   User.findById(userId)
     .orFail()
@@ -57,11 +49,11 @@ const getCurrentUser = (req, res) => {
       console.error(err);
 
       if (err.name === "DocumentNotFoundError") {
-        return res.status(NOT_FOUND).send({ message: "Item not found." });
+        return res.status(NOT_FOUND).send({ message: "User not found." });
       }
 
       if (err.name === "CastError") {
-        return res.status(BAD_REQUEST).send({ message: "Invalid item ID." });
+        return res.status(BAD_REQUEST).send({ message: "Invalid user ID." });
       }
 
       return res
@@ -141,7 +133,6 @@ const updateCurrentUser = (req, res) => {
 };
 
 module.exports = {
-  getUsers,
   getCurrentUser,
   updateCurrentUser,
   createUser,
