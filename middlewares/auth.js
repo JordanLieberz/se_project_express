@@ -24,14 +24,13 @@ const auth = (req, res, next) => {
     return res.status(401).send({ message: "Authorization required" });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, payload) => {
+  return jwt.verify(token, JWT_SECRET, (err, payload) => {
     if (err) {
       return res.status(401).send({ message: "Unauthorized: Invalid token" });
     }
 
     req.user = payload;
-
-    next();
+    return next();
   });
 };
 

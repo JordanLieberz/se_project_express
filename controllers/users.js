@@ -10,8 +10,6 @@ const {
   UNAUTHORIZED,
 } = require("../utils/errors");
 
-const { JWT_SECRET } = require("../utils/config");
-
 const getUsers = (req, res) => {
   User.find({})
     .then((users) => res.status(200).send(users))
@@ -28,9 +26,7 @@ const createUser = (req, res) => {
 
   bcrypt
     .hash(password, 10)
-    .then((hashedPassword) => {
-      return User.create({ email, password: hashedPassword });
-    })
+    .then((hashedPassword) => User.create({ email, password: hashedPassword }))
     .then((user) => {
       res.status(CREATED).send(user);
     })
@@ -86,33 +82,28 @@ const login = (req, res) => {
           .send({ message: "Invalid email or password" });
       }
 
-      bcrypt
-        .compare(password, user.password)
-        .then((isMatch) => {
-          if (!isMatch) {
-            return res
-              .status(UNAUTHORIZED)
-              .send({ message: "Invalid email or password" });
-          }
-
-          const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
-            expiresIn: "7d",
-          });
-
-          res.send({ token });
-        })
-        .catch((err) => {
-          console.error(err);
-          res
+      return bcrypt.compare(password, user.password).then((isMatch) => {
+        if (!isMatch) {
+          return res
             .status(UNAUTHORIZED)
             .send({ message: "Invalid email or password" });
+        }
+
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
+          expiresIn: "7d",
         });
+
+        return res.send({ token });
+      });
     })
     .catch((err) => {
       console.error(err);
-      res.status(UNAUTHORIZED).send({ message: "Invalid email or password" });
+      return res
+        .status(UNAUTHORIZED)
+        .send({ message: "Invalid email or password" });
     });
 };
+
 const updateCurrentUser = (req, res) => {
   const { name, avatar } = req.body;
 
@@ -128,7 +119,7 @@ const updateCurrentUser = (req, res) => {
       .send({ message: "No valid fields provided to update" });
   }
 
-  User.findByIdAndUpdate(userId, updateFields, {
+  return User.findByIdAndUpdate(userId, updateFields, {
     new: true,
     runValidators: true,
   })
@@ -136,7 +127,7 @@ const updateCurrentUser = (req, res) => {
       if (!user) {
         return res.status(NOT_FOUND).send({ message: "User not found." });
       }
-      res.status(200).send(user);
+      return res.status(200).send(user);
     })
     .catch((err) => {
       console.error(err);
@@ -148,6 +139,7 @@ const updateCurrentUser = (req, res) => {
         .send({ message: "An error has occurred on the server." });
     });
 };
+
 module.exports = {
   getUsers,
   getCurrentUser,
