@@ -10,6 +10,8 @@ const {
   UNAUTHORIZED,
 } = require("../utils/errors");
 
+const { JWT_SECRET } = require("../utils/config");
+
 const createUser = (req, res) => {
   const { email, password, name, avatar } = req.body;
 
@@ -81,7 +83,7 @@ const login = (req, res) => {
             .send({ message: "Invalid email or password" });
         }
 
-        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, {
+        const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
           expiresIn: "7d",
         });
 
