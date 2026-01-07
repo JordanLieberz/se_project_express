@@ -10,7 +10,7 @@ const validateURL = (value, helpers) => {
 };
 
 //
-// 1. Validate clothing item body (example provided in prompt)
+
 //
 const validateCardBody = celebrate({
   body: Joi.object().keys({
@@ -28,7 +28,7 @@ const validateCardBody = celebrate({
 });
 
 //
-// 2. Validate user creation (signup)
+
 //
 const validateUserBody = celebrate({
   body: Joi.object().keys({
@@ -62,14 +62,14 @@ const validateLoginBody = celebrate({
       "string.email": 'The "email" field must be a valid email address',
       "string.empty": 'The "email" field must be filled in',
     }),
-
     password: Joi.string().required().messages({
       "string.empty": 'The "password" field must be filled in',
     }),
   }),
 });
 
-module.exports.validateId = celebrate({
+// ID param validator
+const validateId = celebrate({
   params: Joi.object().keys({
     id: Joi.string().hex().length(24).required().messages({
       "string.hex": 'The "id" must be a valid hexadecimal value',
@@ -78,10 +78,11 @@ module.exports.validateId = celebrate({
     }),
   }),
 });
+
 module.exports = {
   validateURL,
   validateCardBody,
   validateUserBody,
   validateLoginBody,
-  validateIdParam,
+  validateId,
 };

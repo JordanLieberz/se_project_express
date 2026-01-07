@@ -8,12 +8,21 @@ const {
 } = require("../controllers/clothingItems");
 
 const auth = require("../middlewares/auth");
+const { validateCardBody, validateId } = require("../middlewares/validation");
 
+// Get all items
 router.get("/", getItems);
 
-router.post("/", auth, createItem);
-router.delete("/:itemId", auth, deleteItem);
-router.put("/:itemId/likes", auth, likeItem);
-router.delete("/:itemId/likes", auth, dislikeItem);
+// Create a new item
+router.post("/", auth, validateCardBody, createItem);
+
+// Delete an item
+router.delete("/:itemId", auth, validateId, deleteItem);
+
+// Like an item
+router.put("/:itemId/likes", auth, validateId, likeItem);
+
+// Dislike an item
+router.delete("/:itemId/likes", auth, validateId, dislikeItem);
 
 module.exports = router;
