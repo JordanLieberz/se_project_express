@@ -7,6 +7,7 @@ const {
 } = require("../controllers/users");
 
 const {
+  validateUser,
   validateUserBody,
   validateLoginBody,
 } = require("../middlewares/validation");
@@ -17,6 +18,6 @@ router.post("/login", validateLoginBody, login);
 
 router.get("/me", getCurrentUser);
 
-router.patch("/me", validateUserBody, updateCurrentUser);
+router.patch("/me", validateUser, updateCurrentUser);
 
 module.exports = router;

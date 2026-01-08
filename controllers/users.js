@@ -67,7 +67,9 @@ const getCurrentUser = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
+    if (!email || !password) {
+      return next(new BadRequestError("Invalid Data"));
+    }
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
       throw new UnauthorizedError("Invalid email or password");
