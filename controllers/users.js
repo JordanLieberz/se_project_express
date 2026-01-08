@@ -1,14 +1,13 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  DEFAULT,
-  CREATED,
-  CONFLICT,
-  UNAUTHORIZED,
-} = require("../utils/errors");
+
+const BadRequestError = require("../errors/BadRequestError");
+const NotFoundError = require("../errors/NotFoundError");
+const ConflictError = require("../errors/ConflictError");
+const UnauthorizedError = require("../errors/UnauthorizedError");
+
+const { CREATED } = require("../utils/errors");
 const { JWT_SECRET } = require("../utils/config");
 
 // Create a new user
@@ -17,13 +16,11 @@ const createUser = async (req, res, next) => {
     const { email, password, name, avatar } = req.body;
 
     if (!email || !password) {
-      return next({
-        statusCode: BAD_REQUEST,
-        message: "Email and password are required",
-      });
+      throw new BadRequestError("Email and password are required");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await User.create({
       email,
       password: hashedPassword,
@@ -31,21 +28,19 @@ const createUser = async (req, res, next) => {
       avatar,
     });
 
-    const { password: _unused, ...safeUser } = user.toObject(); // omit password
+    const { password: _unused, ...safeUser } = user.toObject();
     console.log(_unused);
-
     return res.status(CREATED).send(safeUser);
   } catch (err) {
     if (err.code === 11000) {
-      return next({ statusCode: CONFLICT, message: "Email already exists" });
+      return next(new ConflictError("Email already exists"));
     }
+
     if (err.name === "ValidationError") {
-      return next({ statusCode: BAD_REQUEST, message: "Invalid input data" });
+      return next(new BadRequestError("Invalid input data"));
     }
-    return next({
-      statusCode: DEFAULT,
-      message: "An error has occurred on the server.",
-    });
+
+    return next(err);
   }
 };
 
@@ -53,18 +48,18 @@ const createUser = async (req, res, next) => {
 const getCurrentUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).orFail();
+
     return res.status(200).send(user);
   } catch (err) {
     if (err.name === "DocumentNotFoundError") {
-      return next({ statusCode: NOT_FOUND, message: "User not found." });
+      return next(new NotFoundError("User not found."));
     }
+
     if (err.name === "CastError") {
-      return next({ statusCode: BAD_REQUEST, message: "Invalid user ID." });
+      return next(new BadRequestError("Invalid user ID."));
     }
-    return next({
-      statusCode: DEFAULT,
-      message: "An error has occurred on the server.",
-    });
+
+    return next(err);
   }
 };
 
@@ -72,30 +67,24 @@ const getCurrentUser = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select("+password");
 
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return next({
-        statusCode: UNAUTHORIZED,
-        message: "Invalid email or password",
-      });
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return next({
-        statusCode: UNAUTHORIZED,
-        message: "Invalid email or password",
-      });
+      throw new UnauthorizedError("Invalid email or password");
     }
 
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
     return res.send({ token });
   } catch (err) {
-    return next({
-      statusCode: UNAUTHORIZED,
-      message: "Invalid email or password",
-    });
+    return next(err);
   }
 };
 
@@ -104,14 +93,12 @@ const updateCurrentUser = async (req, res, next) => {
   try {
     const { name, avatar } = req.body;
     const updateFields = {};
+
     if (name) updateFields.name = name;
     if (avatar) updateFields.avatar = avatar;
 
     if (Object.keys(updateFields).length === 0) {
-      return next({
-        statusCode: BAD_REQUEST,
-        message: "No valid fields provided to update",
-      });
+      throw new BadRequestError("No valid fields provided to update");
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updateFields, {
@@ -120,18 +107,16 @@ const updateCurrentUser = async (req, res, next) => {
     });
 
     if (!user) {
-      return next({ statusCode: NOT_FOUND, message: "User not found." });
+      throw new NotFoundError("User not found.");
     }
 
     return res.status(200).send(user);
   } catch (err) {
     if (err.name === "ValidationError") {
-      return next({ statusCode: BAD_REQUEST, message: "Invalid input data." });
+      return next(new BadRequestError("Invalid input data."));
     }
-    return next({
-      statusCode: DEFAULT,
-      message: "An error has occurred on the server.",
-    });
+
+    return next(err);
   }
 };
 
